@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FleetLink Driver - App Flow Visualization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.9);
+            font-size: 1.2em;
+            margin-bottom: 50px;
+        }
+
+        /* Flow Container */
+        .flow-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            position: relative;
+        }
+
+        /* Screen Row */
+        .screen-row {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        /* Individual Screen */
+        .screen {
+            background: white;
+            border-radius: 40px;
+            padding: 20px 15px;
+            box-shadow: 0 30px 40px rgba(0,0,0,0.2);
+            width: 320px;
+            position: relative;
+            transition: transform 0.3s;
+        }
+
+        .screen:hover {
+            transform: translateY(-10px);
+        }
+
+        /* Screen Header (iPhone-style notch) */
+        .screen-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px 15px 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .time {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .status-icons {
+            display: flex;
+            gap: 5px;
+            color: #666;
+        }
+
+        .battery {
+            width: 22px;
+            height: 10px;
+            background: #333;
+            border-radius: 3px;
+            position: relative;
+        }
+
+        .battery::after {
+            content: '';
+            position: absolute;
+            right: -3px;
+            top: 2px;
+            width: 3px;
+            height: 6px;
+            background: #333;
+            border-radius: 2px;
+        }
+
+        /* Screen Content */
+        .screen-content {
+            padding: 20px 0;
+        }
+
+        /* Screen Label */
+        .screen-label {
+            text-align: center;
+            margin-top: 10px;
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        /* Connection Arrows */
+        .arrow-connection {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: white;
+            font-size: 1.2em;
+            margin: -15px 0;
+            z-index: 10;
+        }
+
+        .arrow-down {
+            font-size: 40px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(10px); }
+        }
+
+        /* Screen Elements */
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .input-field {
+            background: #f5f5f5;
+            border-radius: 12px;
+            padding: 15px;
+            border: none;
+            width: 100%;
+            font-size: 14px;
+        }
+
+        .input-field:focus {
+            outline: 2px solid #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: opacity 0.3s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-outline {
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+        }
+
+        /* Delivery List */
+        .delivery-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .delivery-item:hover {
+            background: #f0f0f0;
+        }
+
+        .delivery-address {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .delivery-customer {
+            color: #666;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .sync-badge {
+            background: #fff3cd;
+            color: #856404;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        /* Map Preview */
+        .map-preview {
+            background: #e9ecef;
+            height: 150px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .map-grid {
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(#ccc 1px, transparent 1px),
+                linear-gradient(90deg, #ccc 1px, transparent 1px);
+            background-size: 20px 20px;
+            position: relative;
+        }
+
+        .map-marker {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -100%);
+            color: #dc3545;
+            font-size: 24px;
+        }
+
+        .location-dot {
+            width: 12px;
+            height: 12px;
+            background: #667eea;
+            border-radius: 50%;
+            position: absolute;
+            top: 30%;
+            left: 40%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            70% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Proof of Delivery */
+        .photo-area {
+            background: #e9ecef;
+            height: 120px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            border: 2px dashed #667eea;
+        }
+
+        .signature-line {
+            border-bottom: 2px solid #333;
+            width: 100%;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .signature-line::after {
+            content: 'Sign here';
+            position: absolute;
+            bottom: -25px;
+            left: 0;
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Status Indicators */
+        .status-bar {
+            display: flex;
+            justify-content: space-around;
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-value {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .status-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Offline Indicator */
+        .offline-badge {
+            background: #ff4444;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .offline-dot {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Notification */
+        .notification {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            animation: slideIn 0.5s;
+            position: relative;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Legend */
+        .legend {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 50px;
+            color: white;
+        }
+
+        .legend h3 {
+            margin-bottom: 15px;
+        }
+
+        .legend-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+        }
+
+        /* Feature Tags */
+        .feature-tag {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            color: #667eea;
+            display: inline-block;
+            margin: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 FleetLink Driver</h1>
+        <div class="subtitle">App Flow & Screen Interaction Visualization</div>
+
+        <div class="flow-container">
+            <!-- Row 1: Authentication Flow -->
+            <div class="screen-row">
+                <!-- Login Screen -->
+                <div class="screen">
+                    <div class="screen-header">
+                        <span class="time">9:41</span>
+                        <span class="status-icons">
+                            📶 🔋
+                        </span>
+                    </div>
+                    <div class="screen-content">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <span style="font-size: 40px;">🚚</span>
+                            <h3 style="margin-top: 5px;">FleetLink Driver</h3>
+                        </div>
+                        <div class="login-form">
+                            <input class="input-field" type="email" placeholder="driver@fleetlink.com" value="demo@fleetlink.com">
+                            <input class="input-field" type="password" placeholder="••••••••" value="password">
+                            <div style="display: flex; gap: 10px;">
+                                <div class="offline-badge">
+                                    <span class="offline-dot"></span> Offline Mode
+                                </div>
+                                <span style="color: #666; font-size: 12px; align-self: center;">Last sync: 2h ago</span>
+                            </div>
+                            <button class="btn">Login</button>
+                        </div>
+                        <div style="margin-top: 15px; text-align: center;">
+                            <span style="font-size: 12px; color: #666;">Demo credentials pre-filled</span>
+                        </div>
+                    </div>
+                    <div class="screen-label">🔐 LOGIN SCREEN</div>
+                    <div style="margin-top: 5px; text-align: center;">
+                        <span class="feature-tag">Firebase Auth</span>
+                        <span class="feature-tag">Offline-First</span>
+                        <span class="feature-tag">Session Mgmt</span>
+                    </div>
+                </div>
+
+                <!-- Arrow to next -->
+                <div class="arrow-connection">
+                    <span class="arrow-down">⬇️</span>
+                    <span style="font-size: 14px;">Authentication</span>
+                    <span class="arrow-down">⬇️</span>
+                </div>
+            </div>
+
+            <!-- Row 2: Main Screens -->
+            <div class="screen-row">
+                <!-- Delivery List Screen -->
+                <div class="screen">
+                    <div class="screen-header">
+                        <span class="time">10:15</span>
+                        <span class="status-icons">
+                            📶 🔋 87%
+                        </span>
+                    </div>
+                    <div class="screen-content">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                            <h3>Today's Deliveries</h3>
+                            <span class="sync-badge">🔄 Syncing</span>
+                        </div>
+                        
+                        <!-- Offline Mode Indicator -->
+                        <div style="background: #fff3cd; padding: 8px; border-radius: 8px; margin-bottom: 15px; font-size: 12px; display: flex; gap: 5px;">
+                            <span>📶</span>
+                            <span>You're offline - showing cached deliveries</span>
+                        </div>
+
+                        <!-- Delivery Items -->
+                        <div class="delivery-item">
+                            <div class="delivery-address">📍 123 Main St</div>
+                            <div class="delivery-customer">
+                                <span>John Smith</span>
+                                <span style="color: #28a745;">● Ready</span>
+                            </div>
+                        </div>
+
+                        <div class="delivery-item" style="border-left-color: #ffc107;">
+                            <div class="delivery-address">📍 456 Oak Ave</div>
+                            <div class="delivery-customer">
+                                <span>Sarah Johnson</span>
+                                <span style="color: #ffc107;">● In Progress</span>
+                            </div>
+                        </div>
+
+                        <div class="delivery-item" style="border-left-color: #6c757d;">
+                            <div class="delivery-address">📍 789 Pine Rd</div>
+                            <div class="delivery-customer">
+                                <span>Mike Wilson</span>
+                                <span style="color: #6c757d;">● Pending</span>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 15px;">
+                            <div class="status-bar">
+                                <div class="status-item">
+                                    <div class="status-value">12</div>
+                                    <div class="status-label">Total</div>
+                                </div>
+                                <div class="status-item">
+                                    <div class="status-value">5</div>
+                                    <div class="status-label">Completed</div>
+                                </div>
+                                <div class="status-item">
+                                    <div class="status-value">7</div>
+                                    <div class="status-label">Remaining</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screen-label">📋 DELIVERY LIST</div>
+                    <div style="margin-top: 5px; text-align: center;">
+                        <span class="feature-tag">Room DB</span>
+                        <span class="feature-tag">Offline Cache</span>
+                        <span class="feature-tag">Firestore Sync</span>
+                        <span class="feature-tag">MVVM</span>
+                    </div>
+                </div>
+
+                <!-- Map/Navigation Screen -->
+                <div class="screen">
+                    <div class="screen-header">
+                        <span class="time">10:23</span>
+                        <span class="status-icons">
+                            📶 🔋 82%
+                        </span>
+                    </div>
+                    <div class="screen-content">
+                        <!-- Map Preview -->
+                        <div class="map-preview">
+                            <div class="map-grid">
+                                <div class="map-marker">📍</div>
+                                <div class="location-dot"></div>
+                                <div style="position: absolute; bottom: 10px; left: 10px; background: white; padding: 4px 8px; border-radius: 20px; font-size: 12px;">
+                                    <span>ETA: 8 min</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Delivery Info -->
+                        <div style="margin-bottom: 15px;">
+                            <h4>Current Delivery</h4>
+                            <p style="font-weight: 600;">456 Oak Avenue</p>
+                            <p style="color: #666; font-size: 14px;">Sarah Johnson · Unit 4B</p>
+                        </div>
+
+                        <!-- Battery Saver Notice -->
+                        <div style="background: #e3f2fd; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                            <span>🔋</span>
+                            <span style="font-size: 12px;">Battery saver active: Location updates every 2min</span>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn" style="flex: 2;">Start Navigation</button>
+                            <button class="btn-outline" style="flex: 1;">Call</button>
+                        </div>
+                        <button class="btn-outline" style="margin-top: 10px;">Mark as Arrived</button>
+                    </div>
+                    <div class="screen-label">🗺️ NAVIGATION</div>
+                    <div style="margin-top: 5px; text-align: center;">
+                        <span class="feature-tag">Google Maps</span>
+                        <span class="feature-tag">Battery Efficient</span>
+                        <span class="feature-tag">Distance Sampling</span>
+                        <span class="feature-tag">Fused Location</span>
+                    </div>
+                </div>
+
+                <!-- Proof of Delivery Screen -->
+                <div class="screen">
+                    <div class="screen-header">
+                        <span class="time">10:31</span>
+                        <span class="status-icons">
+                            📶 🔋 81%
+                        </span>
+                    </div>
+                    <div class="screen-content">
+                        <h4 style="margin-bottom: 15px;">Complete Delivery</h4>
+                        
+                        <!-- Photo Capture -->
+                        <div class="photo-area">
+                            <div style="text-align: center;">
+                                <span style="font-size: 30px;">📸</span>
+                                <p style="font-size: 12px; color: #666;">Tap to capture photo</p>
+                            </div>
+                        </div>
+
+                        <!-- Signature -->
+                        <div class="signature-line"></div>
+
+                        <!-- Delivery Notes -->
+                        <input class="input-field" placeholder="Add delivery notes" style="margin: 15px 0;">
+
+                        <!-- Options -->
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                            <span style="background: #f0f0f0; padding: 5px 10px; border-radius: 20px; font-size: 12px;">📦 Left with neighbor</span>
+                            <span style="background: #f0f0f0; padding: 5px 10px; border-radius: 20px; font-size: 12px;">🚫 Could not deliver</span>
+                        </div>
+
+                        <!-- Sync Status -->
+                        <div style="background: #e8f5e8; padding: 8px; border-radius: 8px; margin-bottom: 15px; font-size: 12px;">
+                            <span>⏳ Pending sync (will upload when online)</span>
+                        </div>
+
+                        <button class="btn">Complete Delivery</button>
+                    </div>
+                    <div class="screen-label">📸 PROOF OF DELIVERY</div>
+                    <div style="margin-top: 5px; text-align: center;">
+                        <span class="feature-tag">WorkManager</span>
+                        <span class="feature-tag">Offline Queue</span>
+                        <span class="feature-tag">Image Compression</span>
+                        <span class="feature-tag">Retry Logic</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Arrow to next -->
+            <div class="arrow-connection">
+                <span class="arrow-down">⬇️</span>
+                <span style="font-size: 14px;">Background Sync</span>
+                <span class="arrow-down">⬇️</span>
+            </div>
+
+            <!-- Row 3: System State -->
+            <div class="screen-row">
+                <!-- Background Sync Screen -->
+                <div class="screen">
+                    <div class="screen-header">
+                        <span class="time">11:00</span>
+                        <span class="status-icons">
+                            📶 🔋 75%
+                        </span>
+                    </div>
+                    <div class="screen-content">
+                        <h4 style="margin-bottom: 15px;">Background Sync</h4>
+                        
+                        <!-- Sync Queue -->
+                        <div style="margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span>Pending uploads</span>
+                                <span class="sync-badge">3 items</span>
+                            </div>
+                            
+                            <div style="background: #f8f9fa; padding: 10px; border-radius: 8px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span>📸 Delivery #123</span>
+                                    <span style="color: #ffc107;">⏳ Retry in 5min</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span>📍 Location batch</span>
+                                    <span style="color: #28a745;">✅ Synced</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>📋 Delivery #124</span>
+                                    <span style="color: #dc3545;">❌ Failed</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- WorkManager Status -->
+                        <div style="background: #e3f2fd; padding: 15px; border-radius: 12px;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <span>⚙️</span>
+                                <span style="font-weight: 600;">WorkManager</span>
+                            </div>
+                            <div style="font-size: 12px;">
+                                <p>• Constraints: Wi-Fi, Battery >15%</p>
+                                <p>• Next retry: 11:05 AM</p>
+                                <p>• Backoff: Exponential</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screen-label">⚙️ BACKGROUND SYNC</div>
+                    <div style="margin-top: 5px; text-align: center;">
+                        <span class="feature-tag">WorkManager</span>
+                        <span class="feature-tag">Constraints</span>
+                        <span class="feature-tag">Retry Policy</span>
+                    </div>
+                </div>
+
+                <!-- Notification Screen -->
+                <div class="screen">
+                    <div class="screen-header">
+                        <span class="time">11:05</span>
+                        <span class="status-icons">
+                            📶 🔋 75%
+                        </span>
+                    </div>
+                    <div class="screen-content">
+                        <!-- Incoming Notification -->
+                        <div class="notification">
+                            <div style="display: flex; gap: 10px;">
+                                <span>🔔</span>
+                                <div>
+                                    <strong>New Priority Pickup</strong>
+                                    <p style="font-size: 12px; margin-top: 5px;">789 Industrial Blvd · Urgent</p>
+                                    <p style="font-size: 10px; margin-top: 5px;">Accept within 2 minutes</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h4 style="margin: 15px 0 10px 0;">Recent Notifications</h4>
+                        
+                        <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                            <div style="display: flex; gap: 10px;">
+                                <span>🔄</span>
+                                <div>
+                                    <strong>Route updated</strong>
+                                    <p style="font-size: 12px; color: #666;">2 new stops added</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="background: #f8f9fa; padding: 10px; border-radius: 8px;">
+                            <div style="display: flex; gap: 10px;">
+                                <span>⚡</span>
+                                <div>
+                                    <strong>Battery low</strong>
+                                    <p style="font-size: 12px; color: #666;">15% remaining - Power saving mode</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screen-label">🔔 NOTIFICATIONS</div>
+                    <div style="margin-top: 5px; text-align: center;">
+                        <span class="feature-tag">FCM</span>
+                        <span class="feature-tag">Push Notifications</span>
+                        <span class="feature-tag">Deep Links</span>
+                    </div>
+                </div>
+
+                <!-- Profile/Stats Screen -->
+                <div class="screen">
+                    <div class="screen-header">
+                        <span class="time">11:15</span>
+                        <span class="status-icons">
+                            📶 🔋 74%
+                        </span>
+                    </div>
+                    <div class="screen-content">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <span style="font-size: 50px;">👤</span>
+                            <h4>Mike Driver</h4>
+                            <p style="color: #666;">ID: DRV-789</p>
+                        </div>
+
+                        <!-- Stats -->
+                        <div class="status-bar" style="margin-bottom: 20px;">
+                            <div class="status-item">
+                                <div class="status-value">98%</div>
+                                <div class="status-label">On-time</div>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-value">45</div>
+                                <div class="status-label">Deliveries</div>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-value">4.8</div>
+                                <div class="status-label">Rating</div>
+                            </div>
+                        </div>
+
+                        <!-- Data Usage -->
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 12px;">
+                            <h5 style="margin-bottom: 10px;">Today's Data Usage</h5>
+                            <div style="height: 8px; background: #e9ecef; border-radius: 4px; margin-bottom: 10px;">
+                                <div style="width: 35%; height: 100%; background: #667eea; border-radius: 4px;"></div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                                <span>📊 12.5 MB used</span>
+                                <span>🎯 35% of limit</span>
+                            </div>
+                            <p style="font-size: 11px; color: #666; margin-top: 10px;">Optimized: Images compressed (60% saved)</p>
+                        </div>
+                    </div>
+                    <div class="screen-label">📊 PROFILE & STATS</div>
+                    <div style="margin-top: 5px; text-align: center;">
+                        <span class="feature-tag">Analytics</span>
+                        <span class="feature-tag">Data Tracking</span>
+                        <span class="feature-tag">Performance</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <h3>📖 Interaction Flow & Key Features</h3>
+            <div class="legend-grid">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #667eea;"></div>
+                    <span>User Authentication Flow</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #28a745;"></div>
+                    <span>Offline-First Operations</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ffc107;"></div>
+                    <span>Background Sync</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #dc3545;"></div>
+                    <span>Battery Optimizations</span>
+                </div>
+                <div class="legend-item">
+                    <span>⬇️</span>
+                    <span>Navigation Flow</span>
+                </div>
+            </div>
+            <div style="margin-top: 20px; text-align: center; font-size: 14px; background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
+                <p><strong>Complete User Journey:</strong> Login → View Deliveries → Navigate to Location → Capture Proof of Delivery → Background Sync → Receive Updates → View Performance Stats</p>
+                <p style="margin-top: 10px; font-size: 12px;">✨ All screens demonstrate offline capability, battery efficiency, and real-time sync as required in the job description</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
